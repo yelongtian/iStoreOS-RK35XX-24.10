@@ -31,6 +31,24 @@ chmod 755 package/base-files/files/bin/coremark.sh
 
 # 复制dts设备树文件到指定目录下
 cp -a $GITHUB_WORKSPACE/configfiles/dts/rk3588/* target/linux/rockchip/dts/rk3588/
+[ -d "$GITHUB_WORKSPACE/configfiles/dts/rk3399" ] && cp -a $GITHUB_WORKSPACE/configfiles/dts/rk3399/* target/linux/rockchip/dts/rk3399/
+
+
+# 添加 EMB3531 设备定义到 armv8.mk
+if ! grep -q "rockchip_emb3531" target/linux/rockchip/image/armv8.mk; then
+    cat >> target/linux/rockchip/image/armv8.mk << 'EOF'
+
+define Device/rockchip_emb3531
+  DEVICE_VENDOR := Rockchip
+  DEVICE_MODEL := EMB3531
+  SOC := rk3399
+  DEVICE_DTS_DIR := ../dts
+  DEVICE_DTS = rk3399/rk3399-emb3531
+  DEVICE_PACKAGES := kmod-r8169
+endef
+TARGET_DEVICES += rockchip_emb3531
+EOF
+fi
 
 
 # iStoreOS-settings

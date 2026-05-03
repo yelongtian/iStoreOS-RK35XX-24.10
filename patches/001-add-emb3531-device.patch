@@ -1,0 +1,12 @@
+--- a/target/linux/rockchip/image/armv8.mk
++++ b/target/linux/rockchip/image/armv8.mk
+@@ -0,0 +0,0 @@
++define Device/rockchip_emb3531
++  DEVICE_VENDOR := Rockchip
++  DEVICE_MODEL := EMB3531
++  SOC := rk3399
++  DEVICE_DTS := rockchip/rk3399-emb3531
++  DEVICE_DTS_DIR := ../dts
++  DEVICE_PACKAGES := kmod-r8169
++endef
++TARGET_DEVICES += rockchip_emb3531

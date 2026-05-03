@@ -3,17 +3,47 @@ name: Build iStore OS 6.x
 on:
   repository_dispatch:
   workflow_dispatch:
-    # inputs:
-      # ssh:
-        # description: 'SSH connection to Actions'
-        # required: false
-        # default: 'false'
+    inputs:
+      device:
+        description: '选择要编译的设备 (留空则编译所有设备)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - 'rk3399-emb-3531'
+          - 'friendlyarm_nanopi-r2s'
+          - 'friendlyarm_nanopi-r3s'
+          - 'friendlyarm_nanopi-r4s'
+          - 'friendlyarm_nanopi-r4se'
+          - 'friendlyarm_nanopi-r5s'
+          - 'friendlyarm_nanopi-r6s'
+          - 'hinlink_h88k'
+          - 'hinlink_opc-h6xk'
+          - 'fastrhino_r6xs'
+          - 'lyt_t68m'
+          - 'xunlong_orangepi-5-plus'
+          - 'radxa_rock-5t'
+          - 'firefly_station-m2'
+          - 'cyber_cyber3588-aib'
+          - 'easepi_a2'
+          - 'easepi_ars4'
+          - 'easepi_r1'
+          - 'easepi_r1-lite'
+          - 'easepi_r2'
+          - 'hlink_h28k'
+          - 'lyt_t88m'
+          - 'radxa_e20c'
+          - 'radxa_e24c'
+          - 'radxa_e52c'
+          - 'radxa_e54c'
+          - 'roceos_k60pro'
+          - 'friendlyarm_nanopi-r76s'
   schedule:
    - cron: 0 16 * * *
 
 env:
   REPO_URL: https://github.com/istoreos/istoreos
-  # REPO_BRANCH: main
   FEEDS_CONF: feeds.conf
   CONFIG_FILE: .config
   DIY_P1_SH: diy-part1-6.x.sh
@@ -30,9 +60,7 @@ jobs:
     strategy:
       matrix:
         REPO_BRANCH:
-          # - main
           - istoreos-24.10
-          # - istoreos-23.05
         ARCHITECTURE:
           - armv8
         os:
@@ -104,7 +132,7 @@ jobs:
       uses: klever1988/cachewrtbuild@main
       with:
         ccache: 'true'
-        mixkey: ${{ matrix.os }}-${{ matrix.ARCHITECTURE }}-${{ matrix.REPO_BRANCH }}
+        mixkey: ${{ matrix.os }}-${{ matrix.ARCHITECTURE }}-${{ matrix.REPO_BRANCH }}-${{ github.event.inputs.device || 'all' }}
         prefix: ${{ github.workspace }}/openwrt
 
     - name: 加载自定义 feeds
@@ -125,19 +153,23 @@ jobs:
     - name: 加载自定义配置
       env:
         CONFIG_FILE_PATH: ${{ matrix.ARCHITECTURE }}/${{ env.CONFIG_FILE }}
+        SELECTED_DEVICE: ${{ github.event.inputs.device }}
       run: |
         [ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE_PATH ] && mv $CONFIG_FILE_PATH openwrt/$CONFIG_FILE
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-
-    # - name: SSH 连接到 Actions
-      # uses: P3TERX/ssh2actions@main
-      # if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
-      # env:
-        # TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        # TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        
+        if [ -n "$SELECTED_DEVICE" ]; then
+          echo "选择编译设备: $SELECTED_DEVICE"
+          sed -i '/CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_/d' .config
+          echo "CONFIG_TARGET_DEVICE_rockchip_armv8_DEVICE_${SELECTED_DEVICE}=y" >> .config
+          sed -i '/CONFIG_TARGET_MULTI_PROFILE/d' .config
+          echo "# CONFIG_TARGET_MULTI_PROFILE is not set" >> .config
+          sed -i '/CONFIG_TARGET_ALL_PROFILES/d' .config
+          echo "# CONFIG_TARGET_ALL_PROFILES is not set" >> .config
+        fi
 
     - name: 下载软件包
       id: package
@@ -187,11 +219,16 @@ jobs:
     - name: 生成发布标签
       id: tag
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
+      env:
+        SELECTED_DEVICE: ${{ github.event.inputs.device }}
       run: |
-        echo "release_tag=$(date +"%Y.%m.%d-%H.%M")-${{ matrix.ARCHITECTURE }}" >> ${GITHUB_OUTPUT}
+        DEVICE_TAG="${SELECTED_DEVICE:-all}"
+        echo "release_tag=$(date +"%Y.%m.%d-%H.%M")-${{ matrix.ARCHITECTURE }}-${DEVICE_TAG}" >> ${GITHUB_OUTPUT}
         touch release.txt
         echo "
         💻 架构: ${{ matrix.ARCHITECTURE }}
+
+        📱 设备: ${SELECTED_DEVICE:-所有设备}
 
         📂 源码: ${{ env.REPO_URL }}
 
