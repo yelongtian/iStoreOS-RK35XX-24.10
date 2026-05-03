@@ -43,7 +43,7 @@
 | R4SE       | istoreos-rockchip-armv8-friendlyarm_nanopi-r4se-squashfs-sysupgrade.img.gz |
 | ROCK-PI-4A | istoreos-rockchip-armv8-radxa_rock-pi-squashfs-sysupgrade.img.gz  |
 | ROCKPRO64  | istoreos-rockchip-armv8-pine64_rockpro64-squashfs-sysupgrade.img.gz  |
-| EMB3531    | istoreos-rockchip-armv8-rockchip_emb3531-squashfs-sysupgrade.img.gz  |
+| EMB3531    | istoreos-rockchip-armv8-rk3399_emb-3531-squashfs-sysupgrade.img.gz  |
 
 ### ARMv8/RK35xx 架构
 
